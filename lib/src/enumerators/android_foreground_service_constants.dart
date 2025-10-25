@@ -67,8 +67,6 @@ class AndroidForegroundServiceConstants {
 
   static ForegroundServiceType serviceTypeFromAndroidValues(int value) {
     switch (value) {
-      case 512:
-        return ForegroundServiceType.manifest;
       case 1:
         return ForegroundServiceType.dataSync;
       case 2:
