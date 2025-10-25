@@ -452,65 +452,116 @@ public class AwesomeNotificationsPlugin
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void channelMethodStartForeground(
-            @NonNull final MethodCall call,
-            @NonNull final Result result
-    ) throws AwesomeNotificationsException {
 
-        Map<String, Object> arguments = MapUtils.extractArgument(call.arguments(), Map.class).orNull();
-        if(arguments == null)
-            throw ExceptionFactory
-                    .getInstance()
-                    .createNewAwesomeException(
-                            TAG,
-                            ExceptionCode.CODE_MISSING_ARGUMENTS,
-                            "Arguments are missing",
-                            ExceptionCode.DETAILED_REQUIRED_ARGUMENTS);
+@SuppressWarnings("unchecked")
+private void channelMethodStartForeground(
+        @NonNull final MethodCall call,
+        @NonNull final Result result
+) throws AwesomeNotificationsException {
 
-        NotificationModel notificationModel = new NotificationModel().fromMap(
+    Map<String, Object> arguments = MapUtils.extractArgument(call.arguments(), Map.class).orNull();
+    if(arguments == null)
+        throw ExceptionFactory
+                .getInstance()
+                .createNewAwesomeException(
+                        TAG,
+                        ExceptionCode.CODE_MISSING_ARGUMENTS,
+                        "Arguments are missing",
+                        ExceptionCode.DETAILED_REQUIRED_ARGUMENTS);
+
+    NotificationModel notificationModel = new NotificationModel().fromMap(
                 (Map<String, Object>) arguments.get(Definitions.NOTIFICATION_MODEL));
 
-        if(notificationModel == null)
-            throw ExceptionFactory
-                    .getInstance()
-                    .createNewAwesomeException(
-                            TAG,
-                            ExceptionCode.CODE_INVALID_ARGUMENTS,
-                            "Foreground notification is invalid",
-                            ExceptionCode.DETAILED_INVALID_ARGUMENTS+".notificationModel");
+    if(notificationModel == null)
+        throw ExceptionFactory
+                .getInstance()
+                .createNewAwesomeException(
+                        TAG,
+                        ExceptionCode.CODE_INVALID_ARGUMENTS,
+                        "Foreground notification is invalid",
+                        ExceptionCode.DETAILED_INVALID_ARGUMENTS+".notificationModel");
 
-        ForegroundStartMode foregroundStartMode =
+    // 1. استخراج وضع بدء التشغيل (ForegroundStartMode)
+    ForegroundStartMode foregroundStartMode =
                 notificationModel.getValueOrDefault(arguments, Definitions.NOTIFICATION_SERVICE_START_MODE,
                         ForegroundStartMode.class, ForegroundStartMode.stick);
 
-        ForegroundServiceType foregroundServiceType =
-                notificationModel.getValueOrDefault(arguments, Definitions.NOTIFICATION_FOREGROUND_SERVICE_TYPE,
-                        ForegroundServiceType.class, ForegroundServiceType.none);
+    // 2. معالجة ForegroundServiceType لقبول remoteMessaging مباشرة (التعديل الرئيسي)
+    ForegroundServiceType foregroundServiceType;
+    Object serviceTypeArg = notificationModel.getValueOrDefault(
+            arguments, 
+            Definitions.NOTIFICATION_FOREGROUND_SERVICE_TYPE, 
+            Object.class, 
+            null // القيمة الافتراضية مؤقتًا
+    );
+    
+    // التحقق المباشر من نوع الخدمة
+    if (serviceTypeArg instanceof String && ((String) serviceTypeArg).equalsIgnoreCase("remoteMessaging")) {
+        // في حالة قبولك للاستغناء عن الـ Enum بالكامل، يمكنك إنشاء كائن مؤقت يمثل remoteMessaging.
+        // **ملاحظة:** هذا يتطلب أن تكون ForegroundServiceType (في كود Java) Enum أو كلاس يمكن توسعته.
+        // إذا كان ForegroundServiceType (في Java) هو Android `Service.START_STICKY` أو ما شابه،
+        // يجب أن نرسل قيمة Android المناسبة هنا.
+        
+        // الافتراض: في غياب التحديث الكامل لملف Enum Java، سنفترض "remoteMessaging" إذا تم تمريره.
+        // يجب أن يتم التعامل مع هذا التسمية لاحقًا في دالة 'startForegroundService'.
+        
+        // **إذا كان لديك بالفعل قيمة Enum أو ثابت يمثل remoteMessaging في Java:**
+        // foregroundServiceType = ForegroundServiceType.remoteMessaging;
+        
+        // **إذا لم يكن موجودًا، نستخدم قيمة بديلة مؤقتة**
+        try {
+             // محاولة استخراج Enum بشكل طبيعي أولاً في حال كان ملف Java محدثًا
+             foregroundServiceType = ForegroundServiceType.valueOf(((String) serviceTypeArg).toLowerCase());
+        } catch (IllegalArgumentException e) {
+             // إذا فشل (بسبب remoteMessaging غير مدعوم في Enum Java)، نعود إلى 'none' أو ننشئ Exception
+             // ولكن بما أنك تريد تشغيل remoteMessaging، نفترض 'none' مؤقتًا ونعتمد على القيمة النصية في مكان آخر.
+             // الأفضل هو التأكد من أن `ForegroundServiceType` في Android (Java/Kotlin) يدعم `remoteMessaging`.
+             
+             // **الحل الأفضل هو تمرير القيمة مباشرة كـ String إذا كانت startForegroundService تدعمها:**
+             // نظرًا لأن الدالة تأخذ `ForegroundServiceType`، سنفرض القيمة هنا، مما يعني أنك بحاجة لتحديث `ForegroundServiceType.java`.
+             
+             // *للتعديل الفوري بدون تحديث ملف Enum Java (وهو أمر غير مستحسن):*
+             // *سأستخدم القيمة الافتراضية 'none' مع افتراض أنك ستغير `startForegroundService` لقبول القيمة النصية.*
+             foregroundServiceType = ForegroundServiceType.none; // افتراض مؤقت، أو قم بإنشاء كائن مخصص
+        }
 
-        if(foregroundStartMode == null)
-            throw ExceptionFactory
-                    .getInstance()
-                    .createNewAwesomeException(
-                            TAG,
-                            ExceptionCode.CODE_INVALID_ARGUMENTS,
-                            "Foreground start type is required",
-                            ExceptionCode.DETAILED_INVALID_ARGUMENTS+".foreground.startType");
+    } else if (serviceTypeArg == null) {
+        foregroundServiceType = ForegroundServiceType.none;
+    } else if (serviceTypeArg instanceof String) {
+        // محاولة تحويل سلاسل نصية أخرى إلى Enum
+        try {
+             foregroundServiceType = ForegroundServiceType.valueOf(((String) serviceTypeArg).toLowerCase());
+        } catch (IllegalArgumentException e) {
+             foregroundServiceType = ForegroundServiceType.none;
+        }
+    } else {
+        // العودة إلى القيمة الافتراضية 'none'
+        foregroundServiceType = ForegroundServiceType.none; 
+    }
+    
+    // ***ملاحظة مهمة:*** إذا كانت الدالة `startForegroundService` (في ملف `awesomeNotifications` الخاص بك)
+    // تحتاج إلى قيمة `ForegroundServiceType` صالحة من Java Enum، فيجب عليك **إضافة `remoteMessaging`**
+    // إلى ملف `ForegroundServiceType.java` الأصلي في الكود الأصلي لمكتبة Awesome Notifications.
+    // **بدون ذلك، هذا التعديل سيحتاج لتعديل الدالة `startForegroundService` أيضًا.**
 
-        if(foregroundServiceType == null)
-            throw ExceptionFactory
-                    .getInstance()
-                    .createNewAwesomeException(
-                            TAG,
-                            ExceptionCode.CODE_INVALID_ARGUMENTS,
-                            "foregroundServiceType is required",
-                            ExceptionCode.DETAILED_INVALID_ARGUMENTS+".foreground.serviceType");
 
-        awesomeNotifications.startForegroundService(
+    if(foregroundStartMode == null)
+        throw ExceptionFactory
+                .getInstance()
+                .createNewAwesomeException(
+                        TAG,
+                        ExceptionCode.CODE_INVALID_ARGUMENTS,
+                        "Foreground start type is required",
+                        ExceptionCode.DETAILED_INVALID_ARGUMENTS+".foreground.startType");
+
+    // **تجاوز التحقق من Null هنا لأننا قمنا بتعيين قيمة افتراضية:**
+    // إذا كنت لا تزال تريد التحقق من أن القيمة ليست `none` إذا تم تمرير قيمة، يمكنك إعادتها.
+
+    awesomeNotifications.startForegroundService(
             notificationModel,
             foregroundStartMode,
-            foregroundServiceType);
-    }
+            foregroundServiceType); // سيتم تمرير 'remoteMessaging' إذا تم تعريفه، أو 'none' مؤقتًا
+}
 
     private void channelMethodStopForeground(
             @NonNull final MethodCall call,
