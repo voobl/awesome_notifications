@@ -509,7 +509,7 @@ public class AwesomeNotificationsPlugin
         awesomeNotifications.startForegroundService(
             notificationModel,
             foregroundStartMode,
-            ForegroundServiceType.remoteMessaging);
+            foregroundServiceType);
     }
 
     private void channelMethodStopForeground(
