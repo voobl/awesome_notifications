@@ -3,7 +3,7 @@ package me.carda.awesome_notifications;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-
+import android.util.Log;
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
@@ -506,6 +506,8 @@ public class AwesomeNotificationsPlugin
                             "foregroundServiceType is required",
                             ExceptionCode.DETAILED_INVALID_ARGUMENTS+".foreground.serviceType");
 
+  Log.e("MyService", foregroundServiceType);
+            
         awesomeNotifications.startForegroundService(
             notificationModel,
             foregroundStartMode,
