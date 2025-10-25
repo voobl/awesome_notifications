@@ -49,7 +49,7 @@ class AndroidForegroundServiceConstants {
 
   /// Corresponds to [`ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE`](https://developer.android.com/reference/android/content/pm/ServiceInfo#FOREGROUND_SERVICE_TYPE_MICROPHONE).
   static const int foregroundServiceTypeMicrophone = 128;
-  static const int foregroundServiceTypeRemoteMessaging = 16384;
+  static const int foregroundServiceTypeRemoteMessaging = 512;
 
   static ForegroundStartMode startModeFromAndroidValues(int value) {
     switch (value) {
@@ -85,7 +85,7 @@ class AndroidForegroundServiceConstants {
         return ForegroundServiceType.camera;
       case 128:
         return ForegroundServiceType.microphone;
-      case 16384:
+      case 512:
         return ForegroundServiceType.remoteMessaging;
       case 0:
         return ForegroundServiceType.microphone;
