@@ -85,9 +85,10 @@ class AndroidForegroundServiceConstants {
         return ForegroundServiceType.camera;
       case 128:
         return ForegroundServiceType.microphone;
-      case 129:
-        return ForegroundServiceType.remoteMessaging;
       case 512:
+        return ForegroundServiceType.remoteMessaging;
+      case 0:
+        return ForegroundServiceType.microphone;
       default:
         return ForegroundServiceType.none;
     }
