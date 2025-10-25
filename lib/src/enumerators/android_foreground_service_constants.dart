@@ -21,7 +21,7 @@ class AndroidForegroundServiceConstants {
   static const startRedeliverIntent = 3;
 
   /// Corresponds to [`ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST`](https://developer.android.com/reference/android/content/pm/ServiceInfo#FOREGROUND_SERVICE_TYPE_MANIFEST).
-  static const int foregroundServiceTypeManifest = -1;
+  static const int foregroundServiceTypeManifest = 512;
 
   /// Corresponds to [`ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE`](https://developer.android.com/reference/android/content/pm/ServiceInfo#FOREGROUND_SERVICE_TYPE_NONE).
   static const int foregroundServiceTypeNone = 0;
@@ -67,7 +67,7 @@ class AndroidForegroundServiceConstants {
 
   static ForegroundServiceType serviceTypeFromAndroidValues(int value) {
     switch (value) {
-      case -1:
+      case 512:
         return ForegroundServiceType.manifest;
       case 1:
         return ForegroundServiceType.dataSync;
